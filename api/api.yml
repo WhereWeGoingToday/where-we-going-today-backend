@@ -1,0 +1,131 @@
+Description: WhereWeGoing.today Backend Api Stack
+
+Parameters: 
+  UserPoolId: 
+    Type: String
+    Description: Cognito user pool ID.
+
+Resources:
+  ChoiceTable:
+    Type: "AWS::DynamoDB::Table"
+    Description: "Data store for AWS AppSync Choice Types"
+    Properties:
+      TableName: wherewegoingtoday-choice
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  
+  DynamoDBRole:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - AppSyncDynamoDBPolicy
+    Properties:
+      RoleName: wherewegoingtoday-appsync-dynamodb-role
+      ManagedPolicyArns:
+        - Ref: AppSyncDynamoDBPolicy
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+
+  AppSyncDynamoDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Managed policy to allow AWS AppSync to access the tables created by this template.
+      Path: /appsync/
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource: 
+              - !Join [ "", [ !GetAtt ChoiceTable.Arn, "*" ] ]
+
+  AppSyncApi:
+    Type: "AWS::AppSync::GraphQLApi"
+    Description: "The GraphQL API from AppSync"
+    Properties:
+      AuthenticationType: "AMAZON_COGNITO_USER_POOLS"
+      Name: wherewegoingtoday-api
+      UserPoolConfig:
+        UserPoolId: !Ref UserPoolId
+        AwsRegion: !Sub ${AWS::Region}
+        DefaultAction: "ALLOW"
+
+  AppSyncSchema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      DefinitionS3Location: ./schema.graphql
+
+  AppSyncChoiceTableDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      Name: Choice_DynamoDBTable
+      Description: "Data Source for Choice type objects"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt DynamoDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref ChoiceTable
+        AwsRegion: !Sub ${AWS::Region}
+
+  AppSyncGetChoiceQueryResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Query
+      FieldName: getChoice
+      DataSourceName: !GetAtt AppSyncChoiceTableDataSource.Name
+      RequestMappingTemplateS3Location: "./resolver/getChoice/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/getChoice/response.vtl"
+
+  AppSyncCreateRestaurantMutationResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Mutation
+      FieldName: createRestaurant
+      DataSourceName: !GetAtt AppSyncChoiceTableDataSource.Name
+      RequestMappingTemplateS3Location: "./resolver/createRestaurant/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/createRestaurant/response.vtl"
+
+  AppSyncCreateActivityMutationResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Mutation
+      FieldName: createActivity
+      DataSourceName: !GetAtt AppSyncChoiceTableDataSource.Name
+      RequestMappingTemplateS3Location: "./resolver/createActivity/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/createActivity/response.vtl"
+
+Outputs:
+  GraphQLApiEndpoint:
+    Description: The URL to the GraphQL Endpoint
+    Value: !GetAtt AppSyncApi.GraphQLUrl
+  GraphQLApiId:
+    Description: The API ID of the GraphQL API
+    Value: !GetAtt AppSyncApi.ApiId

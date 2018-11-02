@@ -1,0 +1,76 @@
+Description: WhereWeGoing.today Backend Auth Stack
+
+Resources:
+  CognitoSNSRole:
+    Type: AWS::IAM::Role
+    Description: "An IAM Role to allow Cognito to send SNS messages"
+    DependsOn:
+      - CognitoSNSPolicy
+    Properties:
+      RoleName: wherewegoingtoday-cognito-sns-role
+      ManagedPolicyArns:
+        - Ref: CognitoSNSPolicy
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - cognito-idp.amazonaws.com
+
+  CognitoSNSPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Managed policy to allow Amazon Cognito to access SNS
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sns:publish
+            Resource: "*"
+
+  UserPool:
+    Type: "AWS::Cognito::UserPool"
+    Description: "A Cognito user pool for authenticating users"
+    Properties:
+      UserPoolName: wherewegoingtoday-user-pool
+      UsernameAttributes:
+        - phone_number
+        - email
+      AutoVerifiedAttributes:
+        - phone_number
+      MfaConfiguration: "OFF"
+      SmsConfiguration:
+        ExternalId: wherewegoingtoday-external
+        SnsCallerArn: !GetAtt CognitoSNSRole.Arn
+      Schema:
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: phone_number
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+
+  UserPoolWebAppClient:
+    Type: "AWS::Cognito::UserPoolClient"
+    Description: "WebApp Client used by AWS AppSync"
+    Properties:
+      ClientName: wherewegoingtoday-appsync-client-webapp
+      GenerateSecret: false
+      UserPoolId: !Ref UserPool
+
+Outputs:
+  UserPoolId:
+    Description: The Pool ID of the Cognito User Pool    
+    Value: !Ref UserPool
+  UserPoolWebAppClientId:
+    Description: The WebApp Client ID for AWS AppSync Auth
+    Value: !Ref UserPoolWebAppClient

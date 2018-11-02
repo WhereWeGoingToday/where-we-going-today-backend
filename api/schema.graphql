@@ -1,0 +1,55 @@
+type Schema {
+  query: Query,
+  mutation: Mutation
+}
+
+type Query {
+  getChoice(id: String!): ChoiceResult
+}
+
+type Mutation {
+  createRestaurant(name: String!, location: String!): Restaurant!
+  createActivity(name: String!): Activity!
+}
+
+# A choice user can make.
+interface Choice {
+  id: ID!
+  name: String!
+}
+
+# A restaurant user can choose.
+# This will be readable to everyone.
+# TODO: Limit the mutation access of this type
+type Restaurant implements Choice {
+  id: ID!
+  name: String!
+  location: String!
+}
+
+type Activity implements Choice {
+  id: ID!
+  name: String!
+}
+
+union ChoiceResult = Restaurant | Activity
+
+# A list of choices user will use to make choice
+type ChoiceList {
+  id: ID!
+  title: String!
+  owner: String!  # Primary owner of this list
+  editorUser: [String!]  # Users that can update this list
+  editorGroup: [String!]  # Groups that can update this list
+  readUser: [String!]  # Users with read access to this list 
+  readGroup: [String!] # Groups with read access to this list
+  list: [CustomChoice!]
+}
+
+# A wrapper of a choice. Choice lists use this type of object in their list
+# so they can include a choice and add list-specific properties on it.
+type CustomChoice {
+  id: ID!
+  choice: Choice!
+  note: String
+}

@@ -1,0 +1,27 @@
+Description: WhereWeGoing.today Backend Master Stack
+
+Resources:
+  Auth:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./auth/auth.yml"
+  
+  Api:
+    Type: "AWS::CloudFormation::Stack"
+    DependsOn: 
+      - Auth
+    Properties:
+      TemplateURL: "./api/api.yml"
+      Parameters:
+        UserPoolId: !GetAtt Auth.Outputs.UserPoolId
+
+Outputs:
+  UserPoolWebAppClientId:
+    Description: The WebApp Client ID for AWS AppSync Auth
+    Value: !GetAtt Auth.Outputs.UserPoolWebAppClientId
+  GraphQLApiEndpoint:
+    Description: The URL to the GraphQL Endpoint
+    Value: !GetAtt Api.Outputs.GraphQLApiEndpoint
+  GraphQLApiId:
+    Description: The API ID of the GraphQL API
+    Value: !GetAtt Api.Outputs.GraphQLApiId

@@ -1,0 +1,20 @@
+#set($attributeValues = {})
+
+#if($util.isNullOrBlank($ctx.args.name))
+    $util.error("Name is not valid")
+#end
+$util.qr($attributeValues.put("name", $util.dynamodb.toString($ctx.args.name)))
+
+#if($util.isNullOrBlank($ctx.args.location))
+    $util.error("Location is not valid")
+#end
+$util.qr($attributeValues.put("location", $util.dynamodb.toString($ctx.args.location)))
+
+{
+    "version": "2017-02-28",
+    "operation": "PutItem",
+    "key": {
+        "id": $util.dynamodb.toStringJson($util.autoId())
+    },
+    "attributeValues": $util.toJson($attributeValues)
+}
