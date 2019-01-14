@@ -5,11 +5,14 @@ type Schema {
 
 type Query {
   getChoice(id: String!): ChoiceResult
+  getChoiceList(id: String!): ChoiceList
+  getCustomChoice(id: String!): CustomChoice
 }
 
 type Mutation {
   createRestaurant(name: String!, location: String!): Restaurant!
   createActivity(name: String!): Activity!
+  createChoiceList(name: String!, editUser: [String!], readUser: [String!]): ChoiceList!
 }
 
 # A choice user can make.
@@ -37,12 +40,10 @@ union ChoiceResult = Restaurant | Activity
 # A list of choices user will use to make choice
 type ChoiceList {
   id: ID!
-  title: String!
+  name: String!
   owner: String!  # Primary owner of this list
-  editorUser: [String!]  # Users that can update this list
-  editorGroup: [String!]  # Groups that can update this list
-  readUser: [String!]  # Users with read access to this list 
-  readGroup: [String!] # Groups with read access to this list
+  editUser: [String!]  # Users that can update this list
+  readUser: [String!]  # Users with read access to this list
   list: [CustomChoice!]
 }
 

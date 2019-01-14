@@ -20,7 +20,37 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-  
+
+  ChoiceListTable:
+    Type: "AWS::DynamoDB::Table"
+    Description: "Data store for AWS AppSync ChoiceList Types"
+    Properties:
+      TableName: wherewegoingtoday-choicelist
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  CustomChoiceTable:
+    Type: "AWS::DynamoDB::Table"
+    Description: "Data store for AWS AppSync CustomChoice Types"
+    Properties:
+      TableName: wherewegoingtoday-customchoice
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
   DynamoDBRole:
     Type: AWS::IAM::Role
     DependsOn:
@@ -59,6 +89,8 @@ Resources:
               - dynamodb:BatchWriteItem
             Resource: 
               - !Join [ "", [ !GetAtt ChoiceTable.Arn, "*" ] ]
+              - !Join [ "", [ !GetAtt ChoiceListTable.Arn, "*" ] ]
+              - !Join [ "", [ !GetAtt CustomChoiceTable.Arn, "*" ] ]
 
   AppSyncApi:
     Type: "AWS::AppSync::GraphQLApi"
@@ -89,6 +121,30 @@ Resources:
         TableName: !Ref ChoiceTable
         AwsRegion: !Sub ${AWS::Region}
 
+  AppSyncChoiceListTableDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      Name: ChoiceList_DynamoDBTable
+      Description: "Data Source for ChoiceList type objects"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt DynamoDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref ChoiceListTable
+        AwsRegion: !Sub ${AWS::Region}
+
+  AppSyncCustomChoiceTableDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      Name: CustomChoice_DynamoDBTable
+      Description: "Data Source for CustomChoice type objects"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt DynamoDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref CustomChoiceTable
+        AwsRegion: !Sub ${AWS::Region}
+
   AppSyncGetChoiceQueryResolver:
     Type: "AWS::AppSync::Resolver"
     DependsOn: AppSyncSchema
@@ -97,8 +153,30 @@ Resources:
       TypeName: Query
       FieldName: getChoice
       DataSourceName: !GetAtt AppSyncChoiceTableDataSource.Name
-      RequestMappingTemplateS3Location: "./resolver/getChoice/request.vtl"
-      ResponseMappingTemplateS3Location: "./resolver/getChoice/response.vtl"
+      RequestMappingTemplateS3Location: "./resolver/query/getChoice/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/query/getChoice/response.vtl"
+
+  AppSyncGetChoiceListQueryResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Query
+      FieldName: getChoiceList
+      DataSourceName: !GetAtt AppSyncChoiceListTableDataSource.Name
+      RequestMappingTemplateS3Location: "./resolver/query/getChoiceList/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/query/getChoiceList/response.vtl"
+
+  AppSyncGetCustomChoiceQueryResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Query
+      FieldName: getCustomChoice
+      DataSourceName: !GetAtt AppSyncCustomChoiceTableDataSource.Name
+      RequestMappingTemplateS3Location: "./resolver/query/getCustomChoice/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/query/getCustomChoice/response.vtl"
 
   AppSyncCreateRestaurantMutationResolver:
     Type: "AWS::AppSync::Resolver"
@@ -108,8 +186,8 @@ Resources:
       TypeName: Mutation
       FieldName: createRestaurant
       DataSourceName: !GetAtt AppSyncChoiceTableDataSource.Name
-      RequestMappingTemplateS3Location: "./resolver/createRestaurant/request.vtl"
-      ResponseMappingTemplateS3Location: "./resolver/createRestaurant/response.vtl"
+      RequestMappingTemplateS3Location: "./resolver/mutation/createRestaurant/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/mutation/createRestaurant/response.vtl"
 
   AppSyncCreateActivityMutationResolver:
     Type: "AWS::AppSync::Resolver"
@@ -119,8 +197,19 @@ Resources:
       TypeName: Mutation
       FieldName: createActivity
       DataSourceName: !GetAtt AppSyncChoiceTableDataSource.Name
-      RequestMappingTemplateS3Location: "./resolver/createActivity/request.vtl"
-      ResponseMappingTemplateS3Location: "./resolver/createActivity/response.vtl"
+      RequestMappingTemplateS3Location: "./resolver/mutation/createActivity/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/mutation/createActivity/response.vtl"
+
+  AppSyncCreateChoiceListMutationResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Mutation
+      FieldName: createChoiceList
+      DataSourceName: !GetAtt AppSyncChoiceListTableDataSource.Name
+      RequestMappingTemplateS3Location: "./resolver/mutation/createChoiceList/request.vtl"
+      ResponseMappingTemplateS3Location: "./resolver/mutation/createChoiceList/response.vtl"
 
 Outputs:
   GraphQLApiEndpoint:
