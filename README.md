@@ -3,21 +3,30 @@
 ---
 
 ### How to deploy
-1. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html), run `aws configure` and set up your credentials.
+0. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html), run `aws configure` and set up your credentials.
    
-2. Create a S3 bucket for your deployment files:
+0. Go to `./lambda` and run `npm run build` to build the Lambda functions.
+   
+0. Create a S3 bucket for your deployment files:
     ```
     aws s3 mb s3://#{YOUR_BUCKET_NAME}
     ```
 
-3. Package the CloudFormation files:
+0. Package the CloudFormation files:
     ```
-    aws cloudformation package --template-file master.yml --s3-bucket #{YOUR_BUCKET_NAME} --output-template-file packaged-template.json
+    aws cloudformation package \
+    --template-file master.yml \
+    --s3-bucket #{YOUR_BUCKET_NAME} \
+    --output-template-file packaged-template.json
     ```
 
-4. Deploy: 
+0. Deploy: 
     ```
-    aws cloudformation deploy --template-file packaged-template.json --stack-name #{YOUR_STACK_NAME} --capabilities CAPABILITY_NAMED_IAM
+    aws cloudformation deploy \
+    --template-file packaged-template.json \
+    --stack-name #{YOUR_STACK_NAME} \
+    --parameter-overrides YelpApiKey=#{Your Yelp API Key} \
+    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
     ```
 
 ### How to test queries

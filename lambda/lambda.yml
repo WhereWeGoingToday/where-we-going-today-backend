@@ -1,0 +1,24 @@
+Transform: AWS::Serverless-2016-10-31
+Description: WhereWeGoing.today Backend Lambda Stack
+
+Parameters:
+  YelpApiKey:
+    NoEcho: true
+    Type: String
+    Description: API key for calling Yelp APIs.
+
+Globals:
+  Function:
+    Runtime: nodejs8.10
+
+Resources:
+  SearchRestaurantsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'searchRestaurants.handler'
+      MemorySize: 512
+      CodeUri: './build'
+      Timeout: 10
+      Environment:
+        Variables:
+          YELP_API_KEY: !Ref YelpApiKey

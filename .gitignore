@@ -1,4 +1,5 @@
-# Packaged ClopudFormation template file for deployment
-packaged-template.json
+lambda/build
+lambda/node_modules
+lambda/package-lock.json
 
-.vscode/
+packaged-template.json

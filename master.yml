@@ -1,15 +1,29 @@
 Description: WhereWeGoing.today Backend Master Stack
 
+Parameters:
+  YelpApiKey:
+    NoEcho: true
+    Type: String
+    Description: API key for calling Yelp APIs.
+
 Resources:
   Auth:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: "./auth/auth.yml"
-  
+
+  Lambda:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./lambda/lambda.yml"
+      Parameters:
+        YelpApiKey: !Ref YelpApiKey
+
   Api:
     Type: "AWS::CloudFormation::Stack"
     DependsOn: 
       - Auth
+      - Lambda
     Properties:
       TemplateURL: "./api/api.yml"
       Parameters:
